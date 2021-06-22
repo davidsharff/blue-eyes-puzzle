@@ -5,9 +5,8 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+  // Can't render in strict mode without react complaining about material-ui's implementations
+  <App />,
   document.getElementById('root')
 );
 
