@@ -21,9 +21,6 @@ function App() {
       <AppBar position="sticky">
         <ToolBar />
       </AppBar>
-      <Typography variant="subtitle1" style={{ marginRight: "5px" }}>
-        All Islanders
-      </Typography>
       {islanders.map((islander) => (
         <Islander
           key={islander.id}
@@ -95,28 +92,41 @@ function Islander({
           expandIcon={<ExpandMoreIcon />}
           style={{ backgroundColor: isExpanded && "#3f51b514" }}
         >
-          <Typography style={{ marginRight: "10px" }}>
-            {islander.id} knows:
-          </Typography>
-          <IslanderDisplayGroup islanderIds={unknownIslanderIds} />
-          <IslanderDisplayGroup
-            islanderIds={_.map(knownBlueEyedIslanders, "id")}
-            color="primary"
-          />
-          <IslanderDisplayGroup
-            islanderIds={_.map(knownBrownEyedIslanders, "id")}
-            color="secondary"
-          />
+          <div>
+            <Typography style={{ marginRight: "10px" }}>
+              {unknownIslanderIds.length === 1
+                ? "All Know"
+                : _.map(
+                    unknownIslanderIds.slice(0, -1),
+                    (id) => `${id} knows `
+                  )}
+            </Typography>
+            <div style={{ display: "flex" }}>
+              <Typography style={{ marginRight: "10px" }}>
+                {islander.id} sees:
+              </Typography>
+              <IslanderDisplayGroup islanderIds={unknownIslanderIds} />
+              <IslanderDisplayGroup
+                islanderIds={_.map(knownBlueEyedIslanders, "id")}
+                color="primary"
+              />
+              <IslanderDisplayGroup
+                islanderIds={_.map(knownBrownEyedIslanders, "id")}
+                color="secondary"
+              />
+            </div>
+          </div>
         </AccordionSummary>
         {isExpanded &&
           otherIslanders.map((otherIslander) => (
-            <Islander
-              key={otherIslander.id}
-              islander={otherIslander}
-              knownIslanders={otherIslanders}
-              allIslanders={allIslanders}
-              unknownIslanderIds={[...unknownIslanderIds, otherIslander.id]}
-            />
+            <React.Fragment key={otherIslander.id}>
+              <Islander
+                islander={otherIslander}
+                knownIslanders={otherIslanders}
+                allIslanders={allIslanders}
+                unknownIslanderIds={[...unknownIslanderIds, otherIslander.id]}
+              />
+            </React.Fragment>
           ))}
       </Accordion>
     </div>
