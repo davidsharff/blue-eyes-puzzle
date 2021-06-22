@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import _ from "lodash";
 
-import Container from "@material-ui/core/Container";
 import AppBar from "@material-ui/core/AppBar";
 import ToolBar from "@material-ui/core/Toolbar";
 import Accordion from "@material-ui/core/Accordion";
@@ -12,25 +11,26 @@ import FaceIcon from "@material-ui/icons/Face";
 
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 function App() {
-  const [islanders] = useState(createIslanderInitialState(5, 5));
+  const [islanders] = useState(createIslanderInitialState(10, 10));
   if (!islanders) {
     return <div>Loading</div>;
   }
   return (
-    <Container maxWidth="lg">
+    <React.Fragment>
       <AppBar position="sticky">
         <ToolBar />
       </AppBar>
-      {islanders.map((islander) => (
+      {islanders.map((islander, i) => (
         <Islander
           key={islander.id}
+          listIndex={i}
           islander={islander}
           knownIslanders={islanders}
           allIslanders={islanders}
           unknownIslanderIds={[islander.id]}
         />
       ))}
-    </Container>
+    </React.Fragment>
   );
 }
 
@@ -38,6 +38,7 @@ export default App;
 
 function Islander({
   islander,
+  listIndex,
   knownIslanders,
   allIslanders,
   unknownIslanderIds,
@@ -93,16 +94,24 @@ function Islander({
           style={{ backgroundColor: isExpanded && "#3f51b514" }}
         >
           <div>
-            <Typography style={{ marginRight: "10px" }}>
-              {unknownIslanderIds.length === 1
-                ? "All Know"
-                : _.map(
-                    unknownIslanderIds.slice(0, -1),
-                    (id) => `${id} knows `
-                  )}
-            </Typography>
+            {listIndex === 0 && (
+              <Typography
+                style={{
+                  marginRight: "10px",
+                  marginBottom: "5px",
+                  fontWeight: "600",
+                }}
+              >
+                {unknownIslanderIds.length === 1
+                  ? "All Know"
+                  : _.map(
+                      unknownIslanderIds.slice(0, -1),
+                      (id) => `${id} knows `
+                    )}
+              </Typography>
+            )}
             <div style={{ display: "flex" }}>
-              <Typography style={{ marginRight: "10px" }}>
+              <Typography style={{ marginRight: "10px", paddingLeft: "5px" }}>
                 {islander.id} sees:
               </Typography>
               <IslanderDisplayGroup islanderIds={unknownIslanderIds} />
@@ -118,13 +127,14 @@ function Islander({
           </div>
         </AccordionSummary>
         {isExpanded &&
-          otherIslanders.map((otherIslander) => (
+          otherIslanders.map((otherIslander, i) => (
             <React.Fragment key={otherIslander.id}>
               <Islander
                 islander={otherIslander}
                 knownIslanders={otherIslanders}
                 allIslanders={allIslanders}
                 unknownIslanderIds={[...unknownIslanderIds, otherIslander.id]}
+                listIndex={i}
               />
             </React.Fragment>
           ))}
