@@ -8,33 +8,115 @@ import AccordionSummary from "@material-ui/core/AccordionSummary";
 import Typography from "@material-ui/core/Typography";
 import Chip from "@material-ui/core/Chip";
 import FaceIcon from "@material-ui/icons/Face";
+import TextField from "@material-ui/core/TextField";
+import Button from "@material-ui/core/Button";
 
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 function App() {
-  const [islanders] = useState(createIslanderInitialState(10, 10));
-  if (!islanders) {
-    return <div>Loading</div>;
-  }
+  const [islanders, setIslanders] = useState(null);
+
+  const handleCreateIslanders = (totalBlueEyed, totalRedEyed) => {
+    setIslanders(createIslanderInitialState(totalBlueEyed, totalRedEyed));
+  };
+
+  const handleResetIsland = () => {
+    setIslanders(null);
+  };
+
+  const totalBlueEyed = islanders
+    ? _.filter(islanders, { eyeColor: "blue" }).length
+    : 0;
+  const totalRedEyed = islanders
+    ? _.filter(islanders, { eyeColor: "red" }).length
+    : 0;
+
   return (
     <React.Fragment>
-      <AppBar position="sticky">
-        <ToolBar />
-      </AppBar>
-      {islanders.map((islander, i) => (
-        <Islander
-          key={islander.id}
-          listIndex={i}
-          islander={islander}
-          knownIslanders={islanders}
-          allIslanders={islanders}
-          unknownIslanderIds={[islander.id]}
-        />
-      ))}
+      <TopBar
+        totalBlueEyed={totalBlueEyed}
+        totalRedEyed={totalRedEyed}
+        onResetIsland={handleResetIsland}
+      />
+      {islanders === null && (
+        <CreateIsland onCreateIslanders={handleCreateIslanders} />
+      )}
+      {islanders &&
+        islanders.map((islander, i) => (
+          <Islander
+            key={islander.id}
+            listIndex={i}
+            islander={islander}
+            knownIslanders={islanders}
+            allIslanders={islanders}
+            unknownIslanderIds={[islander.id]}
+          />
+        ))}
     </React.Fragment>
   );
 }
 
 export default App;
+
+function TopBar({ totalBlueEyed, totalRedEyed, onResetIsland }) {
+  return (
+    <AppBar position="sticky">
+      <ToolBar style={{ justifyContent: "space-between" }}>
+        <div style={{ display: "flex" }}>
+          <Typography variant="h6">Total Blue Eyed: {totalBlueEyed}</Typography>
+          <Typography variant="h6" style={{ margin: "0 10px" }}>
+            |
+          </Typography>
+          <Typography variant="h6">Total Red Eyed: {totalRedEyed}</Typography>
+        </div>
+        <Button variant="contained" color="secondary" onClick={onResetIsland}>
+          Reset Island
+        </Button>
+      </ToolBar>
+    </AppBar>
+  );
+}
+
+function CreateIsland({ onCreateIslanders }) {
+  const [totalBlueEyed, setTotalBlueEyed] = useState(0);
+  const [totalRedEyed, setTotalRedEyed] = useState(0);
+
+  return (
+    <div
+      style={{
+        padding: "24px",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <Typography variant="h4">New Island</Typography>
+      <div style={{ marginTop: "10px" }}>
+        <TextField
+          label="Total Blue Eyed"
+          type="number"
+          style={{ marginRight: "20px" }}
+          value={totalBlueEyed || totalBlueEyed === 0 ? totalBlueEyed : ""}
+          onChange={(e) => setTotalBlueEyed(parseInt(e.target.value))}
+        />
+        <TextField
+          label="Total Red Eyed"
+          type="number"
+          value={totalRedEyed || totalRedEyed === 0 ? totalRedEyed : ""}
+          onChange={(e) => setTotalRedEyed(parseInt(e.target.value))}
+        />
+      </div>
+      <div>
+        <Button
+          variant="contained"
+          color="primary"
+          style={{ marginTop: "20px" }}
+          onClick={() => onCreateIslanders(totalBlueEyed, totalRedEyed)}
+        >
+          Create Island
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function Islander({
   islander,
@@ -65,19 +147,36 @@ function Islander({
     eyeColor: "red",
   });
 
-  const IslanderDisplayGroup = ({ islanderIds, color }) => (
-    <div style={{ marginRight: "10px" }}>
-      {islanderIds.map((id) => (
+  const IslanderDisplayGroup = ({ islanderIds, color, showAggregate }) =>
+    showAggregate ? (
+      <div
+        style={{ marginRight: "10px", display: "flex", alignItems: "center" }}
+      >
+        <Typography style={{ marginRight: "2px" }}>
+          {islanderIds.length}x
+        </Typography>
         <Chip
-          key={id}
           icon={<FaceIcon />}
-          label={id}
           color={color}
+          label={
+            color === "primary" ? "Blue" : color === "secondary" ? "Red" : "?"
+          }
           style={{ marginRight: "2px" }}
         />
-      ))}
-    </div>
-  );
+      </div>
+    ) : (
+      <div style={{ marginRight: "10px" }}>
+        {islanderIds.map((id) => (
+          <Chip
+            key={id}
+            icon={<FaceIcon />}
+            label={id}
+            color={color}
+            style={{ marginRight: "2px" }}
+          />
+        ))}
+      </div>
+    );
 
   return (
     <div>
@@ -110,7 +209,7 @@ function Islander({
                     )}
               </Typography>
             )}
-            <div style={{ display: "flex" }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
               <Typography style={{ marginRight: "10px", paddingLeft: "5px" }}>
                 {islander.id} sees:
               </Typography>
