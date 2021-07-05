@@ -10,10 +10,20 @@ import Chip from "@material-ui/core/Chip";
 import FaceIcon from "@material-ui/icons/Face";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
+import FormControl from "@material-ui/core/FormControl";
+import InputLabel from "@material-ui/core/InputLabel";
+import Select from "@material-ui/core/Select";
+import MenuItem from "@material-ui/core/MenuItem";
+import FormHelperText from "@material-ui/core/FormHelperText";
 
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import CheckCircleOutlineIcon from "@material-ui/icons/CheckCircleOutline";
+
+// TODO: original All know is a little confusing because b1 couldn't know that b2 knows b1 sees b2's eye color
 function App() {
   const [islanders, setIslanders] = useState(null);
+  const [guruRevealedColor, setGuruRevealedColor] = useState(null);
+  const [totalFerryTrips, setTotalFerryTrips] = useState(0);
 
   const handleCreateIslanders = (totalBlueEyed, totalRedEyed) => {
     setIslanders(createIslanderInitialState(totalBlueEyed, totalRedEyed));
@@ -21,6 +31,8 @@ function App() {
 
   const handleResetIsland = () => {
     setIslanders(null);
+    setGuruRevealedColor(null);
+    setTotalFerryTrips(0);
   };
 
   const totalBlueEyed = islanders
@@ -36,28 +48,77 @@ function App() {
         totalBlueEyed={totalBlueEyed}
         totalRedEyed={totalRedEyed}
         onResetIsland={handleResetIsland}
+        totalFerryTrips={totalFerryTrips}
       />
       {islanders === null && (
         <CreateIsland onCreateIslanders={handleCreateIslanders} />
       )}
-      {islanders &&
-        islanders.map((islander, i) => (
-          <Islander
-            key={islander.id}
-            listIndex={i}
-            islander={islander}
-            knownIslanders={islanders}
-            allIslanders={islanders}
-            unknownIslanderIds={[islander.id]}
-          />
-        ))}
+      {islanders && (
+        <React.Fragment>
+          <div
+            style={{
+              padding: "16px 0 0 16px",
+              marginBottom: "10px",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <FormControl>
+              <InputLabel id="demo-simple-select-helper-label">
+                Eye Color
+              </InputLabel>
+              <Select
+                value={guruRevealedColor || ""}
+                onChange={(e) => {
+                  setGuruRevealedColor(e.target.value);
+                }}
+              >
+                <MenuItem value="">
+                  <em>None</em>
+                </MenuItem>
+                <MenuItem value="blue">Blue</MenuItem>
+                <MenuItem value="red">Red</MenuItem>
+              </Select>
+              <FormHelperText>Guru speaks and sees...</FormHelperText>
+            </FormControl>
+            <div style={{ marginLeft: "10px" }}>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => setTotalFerryTrips(totalFerryTrips + 1)}
+                disabled={!guruRevealedColor}
+              >
+                Call Ferry
+              </Button>
+            </div>
+          </div>
+          {islanders &&
+            islanders.map((islander, i) => (
+              <Islander
+                key={islander.id}
+                listIndex={i}
+                islander={islander}
+                knownIslanders={islanders}
+                allIslanders={islanders}
+                unknownIslanderIds={[islander.id]}
+                totalFerryTrips={totalFerryTrips}
+                guruRevealedColor={guruRevealedColor}
+              />
+            ))}
+        </React.Fragment>
+      )}
     </React.Fragment>
   );
 }
 
 export default App;
 
-function TopBar({ totalBlueEyed, totalRedEyed, onResetIsland }) {
+function TopBar({
+  totalBlueEyed,
+  totalRedEyed,
+  onResetIsland,
+  totalFerryTrips,
+}) {
   return (
     <AppBar position="sticky">
       <ToolBar style={{ justifyContent: "space-between" }}>
@@ -67,6 +128,12 @@ function TopBar({ totalBlueEyed, totalRedEyed, onResetIsland }) {
             |
           </Typography>
           <Typography variant="h6">Total Red Eyed: {totalRedEyed}</Typography>
+          <Typography variant="h6" style={{ margin: "0 10px" }}>
+            |
+          </Typography>
+          <Typography variant="h6">
+            Total Ferry Trips: {totalFerryTrips}
+          </Typography>
         </div>
         <Button variant="contained" color="secondary" onClick={onResetIsland}>
           Reset Island
@@ -124,6 +191,8 @@ function Islander({
   knownIslanders,
   allIslanders,
   unknownIslanderIds,
+  totalFerryTrips,
+  guruRevealedColor,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -133,21 +202,31 @@ function Islander({
   );
 
   const handleToggleExpand = () => {
-    if (isExpanded) {
-      setIsExpanded(false);
-    } else {
-      setIsExpanded(true);
-    }
+    setIsExpanded(!isExpanded);
   };
 
   const knownBlueEyedIslanders = _.filter(otherIslanders, {
     eyeColor: "blue",
   });
-  const knownBrownEyedIslanders = _.filter(otherIslanders, {
+  const knownRedEyedIslanders = _.filter(otherIslanders, {
     eyeColor: "red",
   });
 
-  const IslanderDisplayGroup = ({ islanderIds, color, showAggregate }) =>
+  const knownTargetColorCount =
+    guruRevealedColor === "blue"
+      ? knownBlueEyedIslanders.length
+      : knownRedEyedIslanders.length;
+
+  const commonKnowledgeCount = guruRevealedColor ? totalFerryTrips + 1 : 0;
+
+  const unknownOfTargetColor = commonKnowledgeCount - knownTargetColorCount;
+
+  const IslanderDisplayGroup = ({
+    islanderIds,
+    color,
+    showAggregate,
+    IconOverride,
+  }) =>
     showAggregate ? (
       <div
         style={{ marginRight: "10px", display: "flex", alignItems: "center" }}
@@ -156,9 +235,10 @@ function Islander({
           {islanderIds.length}x
         </Typography>
         <Chip
-          icon={<FaceIcon />}
+          icon={IconOverride ? <IconOverride /> : <FaceIcon />}
           color={color}
           label={
+            // TODO: this is backwards. Caller should provide blue/red and component should map to theme equivalent
             color === "primary" ? "Blue" : color === "secondary" ? "Red" : "?"
           }
           style={{ marginRight: "2px" }}
@@ -169,14 +249,19 @@ function Islander({
         {islanderIds.map((id) => (
           <Chip
             key={id}
-            icon={<FaceIcon />}
+            icon={IconOverride ? <IconOverride /> : <FaceIcon />}
             label={id}
             color={color}
-            style={{ marginRight: "2px" }}
+            style={{ marginRight: "2px", minWidth: "63px" }}
           />
         ))}
       </div>
     );
+
+  const willLeave =
+    !!guruRevealedColor &&
+    commonKnowledgeCount ===
+      unknownIslanderIds.length + knownBlueEyedIslanders.length;
 
   return (
     <div>
@@ -190,7 +275,9 @@ function Islander({
       >
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
-          style={{ backgroundColor: isExpanded && "#3f51b514" }}
+          style={{
+            backgroundColor: willLeave ? "yellow" : isExpanded && "#3f51b514",
+          }}
         >
           <div>
             {listIndex === 0 && (
@@ -214,14 +301,28 @@ function Islander({
                 {islander.id} sees:
               </Typography>
               <IslanderDisplayGroup islanderIds={unknownIslanderIds} />
-              <IslanderDisplayGroup
-                islanderIds={_.map(knownBlueEyedIslanders, "id")}
-                color="primary"
-              />
-              <IslanderDisplayGroup
-                islanderIds={_.map(knownBrownEyedIslanders, "id")}
-                color="secondary"
-              />
+              {knownBlueEyedIslanders.length > 0 && (
+                <IslanderDisplayGroup
+                  islanderIds={_.map(knownBlueEyedIslanders, "id")}
+                  color="primary"
+                />
+              )}
+              {guruRevealedColor &&
+                knownTargetColorCount < commonKnowledgeCount && (
+                  <IslanderDisplayGroup
+                    islanderIds={_.range(unknownOfTargetColor).map(() => "??")}
+                    color={
+                      guruRevealedColor === "blue" ? "primary" : "secondary"
+                    }
+                    IconOverride={CheckCircleOutlineIcon}
+                  />
+                )}
+              {knownRedEyedIslanders.length > 0 && (
+                <IslanderDisplayGroup
+                  islanderIds={_.map(knownRedEyedIslanders, "id")}
+                  color="secondary"
+                />
+              )}
             </div>
           </div>
         </AccordionSummary>
@@ -234,6 +335,8 @@ function Islander({
                 allIslanders={allIslanders}
                 unknownIslanderIds={[...unknownIslanderIds, otherIslander.id]}
                 listIndex={i}
+                totalFerryTrips={totalFerryTrips}
+                guruRevealedColor={guruRevealedColor}
               />
             </React.Fragment>
           ))}
