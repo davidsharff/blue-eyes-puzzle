@@ -24,6 +24,7 @@ function App() {
   const [islanders, setIslanders] = useState(null);
   const [guruRevealedColor, setGuruRevealedColor] = useState(null);
   const [totalFerryTrips, setTotalFerryTrips] = useState(0);
+  const [expandedParentId, setExpandedParentId] = useState(null); // Unfortunate duplication with Islander component.
 
   const handleCreateIslanders = (totalBlueEyed, totalRedEyed) => {
     setIslanders(createIslanderInitialState(totalBlueEyed, totalRedEyed));
@@ -93,18 +94,22 @@ function App() {
             </div>
           </div>
           {islanders &&
-            islanders.map((islander, i) => (
-              <Islander
-                key={islander.id}
-                listIndex={i}
-                islander={islander}
-                knownIslanders={islanders}
-                allIslanders={islanders}
-                unknownIslanderIds={[islander.id]}
-                totalFerryTrips={totalFerryTrips}
-                guruRevealedColor={guruRevealedColor}
-              />
-            ))}
+            islanders
+              .filter(({ id }) => !expandedParentId || expandedParentId === id)
+              .map((islander, i) => (
+                <Islander
+                  key={islander.id}
+                  listIndex={i}
+                  islander={islander}
+                  knownIslanders={islanders}
+                  allIslanders={islanders}
+                  unknownIslanderIds={[islander.id]}
+                  totalFerryTrips={totalFerryTrips}
+                  guruRevealedColor={guruRevealedColor}
+                  onExpand={() => setExpandedParentId(islander.id)}
+                  expandedParentId={expandedParentId}
+                />
+              ))}
         </React.Fragment>
       )}
     </React.Fragment>
@@ -193,8 +198,11 @@ function Islander({
   unknownIslanderIds,
   totalFerryTrips,
   guruRevealedColor,
+  onExpand,
+  expandedParentIslanderId,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedParentId, setExpandedParentId] = useState(null);
 
   const seenIslanders = _.reject(knownIslanders, { id: islander.id });
   const otherIslanders = seenIslanders.map((otherIslander) =>
@@ -203,6 +211,9 @@ function Islander({
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded);
+    if (!isExpanded) {
+      onExpand();
+    }
   };
 
   const knownBlueEyedIslanders = _.filter(otherIslanders, {
@@ -327,19 +338,22 @@ function Islander({
           </div>
         </AccordionSummary>
         {isExpanded &&
-          otherIslanders.map((otherIslander, i) => (
-            <React.Fragment key={otherIslander.id}>
-              <Islander
-                islander={otherIslander}
-                knownIslanders={otherIslanders}
-                allIslanders={allIslanders}
-                unknownIslanderIds={[...unknownIslanderIds, otherIslander.id]}
-                listIndex={i}
-                totalFerryTrips={totalFerryTrips}
-                guruRevealedColor={guruRevealedColor}
-              />
-            </React.Fragment>
-          ))}
+          otherIslanders
+            .filter(({ id }) => !expandedParentId || expandedParentId === id)
+            .map((otherIslander, i) => (
+              <React.Fragment key={otherIslander.id}>
+                <Islander
+                  islander={otherIslander}
+                  knownIslanders={otherIslanders}
+                  allIslanders={allIslanders}
+                  unknownIslanderIds={[...unknownIslanderIds, otherIslander.id]}
+                  listIndex={i}
+                  totalFerryTrips={totalFerryTrips}
+                  guruRevealedColor={guruRevealedColor}
+                  onExpand={() => setExpandedParentId(otherIslander.id)}
+                />
+              </React.Fragment>
+            ))}
       </Accordion>
     </div>
   );
